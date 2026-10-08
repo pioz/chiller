@@ -36,22 +36,28 @@ static void *playback(void *arg)
     return NULL;
 }
 
+static void close_pcm(void)
+{
+    snd_pcm_close(pcm);
+    pcm = NULL;
+}
+
 int audio_start(void)
 {
     if (snd_pcm_open(&pcm, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0) return -1;
     /* soft_resample=1: ALSA's plug layer converts rate and format if the device needs it */
     if (snd_pcm_set_params(pcm, SND_PCM_FORMAT_FLOAT, SND_PCM_ACCESS_RW_INTERLEAVED, 2, SAMPLE_RATE, 1,
-                           LATENCY_US) < 0)
-        goto fail;
+                           LATENCY_US) < 0) {
+        close_pcm();
+        return -1;
+    }
     running = 1;
-    if (pthread_create(&thread, NULL, playback, NULL) != 0) goto fail;
+    if (pthread_create(&thread, NULL, playback, NULL) != 0) {
+        running = 0;
+        close_pcm();
+        return -1;
+    }
     return 0;
-
-fail:
-    running = 0;
-    snd_pcm_close(pcm);
-    pcm = NULL;
-    return -1;
 }
 
 void audio_stop(void)
@@ -60,6 +66,5 @@ void audio_stop(void)
     running = 0;
     pthread_join(thread, NULL);
     snd_pcm_drop(pcm);
-    snd_pcm_close(pcm);
-    pcm = NULL;
+    close_pcm();
 }
