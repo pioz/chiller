@@ -192,23 +192,34 @@ wave rises as you inhale and withdraws as you exhale. Try breathing along with t
 
 ## Why it should be relaxing
 
-The design choices are based on research. The evidence ranges from moderate to weak and varies
-a lot from person to person: treat it as inspiration, not therapy.
+The design choices are based on research. No study has tested chiller itself, or this exact
+combination of sounds: each ingredient is backed by its own studies, of very different
+strength. Treat it as inspiration, not therapy. Full references are in
+[Scientific references](#scientific-references).
 
 - **0.1 Hz rhythm (6 breaths per minute).** Waves and the breathing guide follow a 10-second
-  cycle. Breathing at about 6 cycles per minute maximizes heart rate variability and vagal tone
-  ("resonance breathing", Lehrer & Gevirtz 2014).
-- **Slow, tension-free harmony.** Chords last 10–16 s and are only major or minor 7ths.
-  Diminished chords are excluded and there is no beat. Slow tempos and little harmonic surprise
-  are associated with lower heart rate and blood pressure (Bernardi et al. 2006).
-- **Pink, brown and white noise.** They mask external sounds, and some studies find that they
-  stabilize sleep (Zhou et al. 2012; Papalambros et al. 2017). Pink and brown have spectra
-  that roll off toward the highs and sound softer. White covers high-pitched sounds better
-  but is harsher, which is why it is played a little quieter.
-- **Natural sounds.** Listening to waves and rain shifts activity toward the parasympathetic
-  nervous system compared to artificial sounds (Gould van Praag et al. 2017).
-- **Binaural beats.** A meta-analysis (Garcia-Argibay et al. 2019) finds a small effect on
-  anxiety, while other studies are negative. For this reason they are kept at a low volume.
+  cycle. Breathing at about 6 cycles per minute maximizes heart rate variability ("resonance
+  breathing") [[1]](#ref-1), and slow breathing in general is linked to calmer psychological and
+  physiological states [[2]](#ref-2). The benefit comes from actually *breathing* at that pace:
+  listening alone is not enough, you have to follow the bar.
+- **Slow, tension-free harmony.** Chords last 10–16 s and are only major, minor or dominant
+  7ths. Diminished chords are excluded and there is no beat. Slow, meditative music lowers
+  heart rate and breathing rate, while fast music raises them [[3]](#ref-3). Music interventions
+  have a small-to-moderate effect on stress, both measured and perceived [[4]](#ref-4). This is
+  the best-supported ingredient.
+- **Natural sounds.** Compared to artificial sounds, listening to natural ones shifts activity
+  toward the parasympathetic ("rest and digest") nervous system [[5]](#ref-5).
+- **Pink, brown and white noise.** They mask external sounds. One small study links continuous
+  pink noise to more stable sleep [[6]](#ref-6). A well-known study on pink noise and deep
+  sleep [[7]](#ref-7) used short bursts synchronized with the sleeper's brain waves, which is
+  different from the continuous noise played by chiller. A systematic review rates the overall
+  evidence for noise as a sleep aid as low quality [[8]](#ref-8). Pink and brown roll off toward
+  the highs and sound softer. White covers high-pitched sounds better but is harsher, which is
+  why it is played a little quieter.
+- **Binaural beats.** A meta-analysis finds a small effect on anxiety [[9]](#ref-9), but a
+  systematic review finds inconsistent evidence that they actually entrain brain waves
+  [[10]](#ref-10). This is the weakest ingredient, so it is kept at a low volume and can be
+  switched off with `b`.
 
 ## Rendering to a WAV file
 
@@ -236,3 +247,72 @@ RMS levels, which is useful to check the mix.
   `--render` mode.
 
 The program uses about 7% of one CPU core.
+
+## Scientific references
+
+**Slow breathing**
+
+1. <a id="ref-1"></a>Lehrer, P. M., & Gevirtz, R. (2014). Heart rate variability biofeedback:
+   how and why does it work? *Frontiers in Psychology*, 5, 756.
+   [doi:10.3389/fpsyg.2014.00756](https://doi.org/10.3389/fpsyg.2014.00756)
+   — Breathing at about 6 breaths per minute maximizes heart rate variability.
+2. <a id="ref-2"></a>Zaccaro, A., et al. (2018). How breath-control can change your life: a
+   systematic review on psycho-physiological correlates of slow breathing. *Frontiers in Human
+   Neuroscience*, 12, 353.
+   [doi:10.3389/fnhum.2018.00353](https://doi.org/10.3389/fnhum.2018.00353)
+   — Slow breathing is associated with relaxation and lower anxiety.
+
+**Music**
+
+3. <a id="ref-3"></a>Bernardi, L., Porta, C., & Sleight, P. (2006). Cardiovascular,
+   cerebrovascular, and respiratory changes induced by different types of music in musicians
+   and non-musicians: the importance of silence. *Heart*, 92(4), 445–452.
+   [doi:10.1136/hrt.2005.064600](https://doi.org/10.1136/hrt.2005.064600)
+   — Slow music lowers heart rate and breathing rate, fast music raises them. Pauses of silence
+   were the most relaxing of all.
+4. <a id="ref-4"></a>de Witte, M., et al. (2020). Effects of music interventions on
+   stress-related outcomes: a systematic review and two meta-analyses. *Health Psychology
+   Review*, 14(2), 294–324.
+   [doi:10.1080/17437199.2019.1627897](https://doi.org/10.1080/17437199.2019.1627897)
+   — Music reduces stress, with small-to-moderate effects on both physiological and
+   psychological measures.
+
+**Natural sounds**
+
+5. <a id="ref-5"></a>Gould van Praag, C. D., et al. (2017). Mind-wandering and alterations to
+   default mode network connectivity when listening to naturalistic versus artificial sounds.
+   *Scientific Reports*, 7, 45273.
+   [doi:10.1038/srep45273](https://doi.org/10.1038/srep45273)
+   — Natural sounds shift activity toward the parasympathetic nervous system compared to
+   artificial ones.
+
+**Noise and sleep**
+
+6. <a id="ref-6"></a>Zhou, J., et al. (2012). Pink noise: effect on complexity synchronization
+   of brain activity and sleep consolidation. *Journal of Theoretical Biology*, 306, 68–72.
+   [doi:10.1016/j.jtbi.2012.04.006](https://doi.org/10.1016/j.jtbi.2012.04.006)
+   — Continuous pink noise is associated with more stable sleep (small sample).
+7. <a id="ref-7"></a>Papalambros, N. A., et al. (2017). Acoustic enhancement of sleep slow
+   oscillations and concomitant memory improvement in older adults. *Frontiers in Human
+   Neuroscience*, 11, 109.
+   [doi:10.3389/fnhum.2017.00109](https://doi.org/10.3389/fnhum.2017.00109)
+   — Pink noise bursts timed to the sleeper's brain waves deepen sleep and improve memory.
+   Note: this is closed-loop stimulation, not continuous noise.
+8. <a id="ref-8"></a>Riedy, S. M., et al. (2021). Noise as a sleep aid: a systematic review.
+   *Sleep Medicine Reviews*, 55, 101385.
+   [doi:10.1016/j.smrv.2020.101385](https://doi.org/10.1016/j.smrv.2020.101385)
+   — The evidence that continuous noise improves sleep is of low quality.
+
+**Binaural beats**
+
+9. <a id="ref-9"></a>Garcia-Argibay, M., Santed, M. A., & Reales, J. M. (2019). Efficacy of
+   binaural auditory beats in cognition, anxiety, and pain perception: a meta-analysis.
+   *Psychological Research*, 83(2), 357–372.
+   [doi:10.1007/s00426-018-1066-8](https://doi.org/10.1007/s00426-018-1066-8)
+   — Small effect on anxiety, with high variability between studies.
+10. <a id="ref-10"></a>Ingendoh, R. M., Posny, E. S., & Heine, A. (2023). Binaural beats to
+    entrain the brain? A systematic review of the effects of binaural beat stimulation on brain
+    oscillatory activity, and the implications for psychological research and intervention.
+    *PLOS ONE*, 18(5), e0286023.
+    [doi:10.1371/journal.pone.0286023](https://doi.org/10.1371/journal.pone.0286023)
+    — Evidence that binaural beats entrain brain waves is inconsistent.
