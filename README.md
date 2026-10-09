@@ -6,6 +6,8 @@ chiller synthesizes everything in real time. It uses no audio files, so the soun
 and never repeats exactly. It runs in the terminal on macOS and Linux, and as a
 [web page](#web-version) that also works on phones.
 
+**Try it in your browser: <https://pioz.github.io/chiller/>**
+
 ```
    ~  c h i l l e r  ~
 
@@ -254,6 +256,8 @@ The program uses about 7% of one CPU core.
 
 ## Web version
 
+Live at **<https://pioz.github.io/chiller/>**.
+
 The `www/` folder contains the same program as a web page. The C engine in `src/`
 (`synth.c` and `app.c`) is compiled to WebAssembly (`www/chiller.wasm`, 18 KB), so the page
 sounds and behaves exactly like the terminal version: on the same seed the two produce the same
@@ -278,10 +282,12 @@ The page must be served over HTTP: browsers do not load WebAssembly or audio wor
 python3 -m http.server -d www 8000    # then open http://localhost:8000
 ```
 
-To use it on a phone, publish the `www/` folder on any static host with HTTPS (GitHub Pages,
-Netlify, Cloudflare Pages, your own server). Then, on an iPhone, open the page in Safari, tap
-**Share → Add to Home Screen**, and chiller gets its own icon, opens full screen and works
-offline.
+To use it on a phone, open <https://pioz.github.io/chiller/> in Safari, tap **Share → Add to Home Screen**, and
+chiller gets its own icon, opens full screen and works offline.
+
+The site is published by GitHub Pages: `.github/workflows/pages.yml` deploys the `www/` folder
+at every push to `main` that changes it. To host it somewhere else, publish `www/` on any static
+host with HTTPS.
 
 On a phone over plain `http` on the local network (e.g. `http://192.168.1.10:8000`) the page
 works too, with two differences: browsers allow audio worklets only on HTTPS, so the audio runs
