@@ -181,6 +181,14 @@ h2 {
   background: var(--on);
   color: var(--ground);
 }
+.play, .start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.play svg { width: 24px; height: 24px; fill: currentColor; }
+.start svg { width: 44px; height: 44px; fill: currentColor; }
 
 .hint { margin: 0; font-size: 0.8em; color: var(--dim); text-align: center; }
 kbd { font: inherit; color: var(--accent); }

@@ -10,6 +10,11 @@ let playing = false;
 let pauseTimer = 0;
 let wakeLock = null;
 let built = false;
+
+// Drawn icons instead of ▶ and ❚❚: font glyphs sit off-center. The triangle's centroid is at the
+// center of the box, which is what makes it look centered.
+const ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.5v13L19.5 12z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>';
 let layerKeys = ""; // "pbnorc", from the engine
 
 // ------------------------------------------------------------------ audio
@@ -157,7 +162,7 @@ function update(state) {
 }
 
 function showPlaying() {
-  $("play").textContent = playing ? "❚❚" : "▶";
+  $("play").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
   $("play").setAttribute("aria-label", playing ? "Pause" : "Play");
 }
 

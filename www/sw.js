@@ -1,5 +1,5 @@
 // Caches the app so it opens offline once installed. Bump VERSION after changing any file.
-const VERSION = "chiller-2";
+const VERSION = "chiller-3";
 const FILES = [
   "./", "index.html", "style.css", "main.js", "engine.js", "worklet.js", "chiller.wasm",
   "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png",
