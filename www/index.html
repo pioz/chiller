@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>chiller</title>
+  <meta name="description" content="Relaxing sounds, synthesized in real time.">
+  <meta name="theme-color" content="#14171f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="chiller">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>~&nbsp; c h i l l e r &nbsp;~</h1>
+      <p class="info">
+        <span><span class="dim">key</span> <span id="key" class="accent">–</span></span>
+        <span><span class="dim">chord</span> <span id="chord" class="accent">–</span></span>
+      </p>
+    </header>
+
+    <section>
+      <h2>scene <span id="scene-name" class="accent"></span></h2>
+      <div id="scenes" class="scenes"></div>
+    </section>
+
+    <section class="layers-section">
+      <h2>layers</h2>
+      <div id="layers" class="layers"></div>
+    </section>
+
+    <section class="adjust">
+      <div class="stepper">
+        <span class="label">volume</span>
+        <button data-cmd="volume" data-value="-0.05" aria-label="Decrease volume">−</button>
+        <span id="volume" class="bar" role="meter" aria-label="Volume"></span>
+        <button data-cmd="volume" data-value="0.05" aria-label="Increase volume">+</button>
+      </div>
+      <div class="stepper">
+        <span class="label">brightness</span>
+        <button data-cmd="brightness" data-value="-0.1" aria-label="Decrease brightness">−</button>
+        <span id="brightness" class="bar" role="meter" aria-label="Brightness"></span>
+        <button data-cmd="brightness" data-value="0.1" aria-label="Increase brightness">+</button>
+      </div>
+    </section>
+
+    <section class="breath">
+      <span class="dim">breath</span>
+      <span id="breath" class="dots" aria-hidden="true"></span>
+      <span id="breath-label">inhale…</span>
+    </section>
+
+    <section class="actions">
+      <button id="variation" class="variation">⤮ new variation</button>
+      <button id="play" class="play" aria-label="Play">▶</button>
+    </section>
+
+    <p class="hint">binaural beats need headphones</p>
+    <p class="hint keys">keyboard: <kbd>1</kbd>–<kbd>5</kbd> scenes · <kbd>space</kbd> variation ·
+      <kbd>p</kbd> <kbd>b</kbd> <kbd>n</kbd> <kbd>o</kbd> <kbd>r</kbd> <kbd>c</kbd> layers ·
+      <kbd>+</kbd> <kbd>-</kbd> volume · <kbd>[</kbd> <kbd>]</kbd> brightness · <kbd>q</kbd> play/pause</p>
+  </main>
+
+  <div id="intro" class="intro">
+    <h1>~ chiller ~</h1>
+    <p>relaxing sounds, synthesized in real time</p>
+    <button id="start" class="start" aria-label="Start">▶</button>
+    <p id="intro-note" class="dim"></p>
+  </div>
+</body>
+</html>

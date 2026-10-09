@@ -1,3 +1,4 @@
+#include "app.h"
 #include "audio.h"
 #include "synth.h"
 
@@ -11,113 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 
-/* ------------------------------------------------------------------ scenes */
-
-typedef struct {
-    float hz;
-    const char *name;
-} Band;
-
-static const Band BANDS[] = {
-    {2.5f, "delta"}, /* deep sleep */
-    {6.0f, "theta"}, /* meditation, drowsiness */
-    {10.0f, "alpha"}, /* relaxed wakefulness */
-};
-#define N_BANDS 3
-
-typedef struct {
-    const char *name;
-    float level[L_COUNT]; /* pad, binaural, noise, ocean, rain, chimes */
-    int band;
-    int noise;
-    float brightness;
-} Scene;
-
-static const Scene SCENES[] = {
-    {"Deep sleep", {0.70f, 0.50f, 0.60f, 0.60f, 0.00f, 0.00f}, 0, NOISE_BROWN, 0.12f},
-    {"Meditation", {0.80f, 0.50f, 0.20f, 0.30f, 0.00f, 0.60f}, 1, NOISE_PINK, 0.35f},
-    {"Relax", {0.60f, 0.40f, 0.35f, 0.00f, 0.50f, 0.30f}, 2, NOISE_PINK, 0.50f},
-    {"Ocean", {0.35f, 0.30f, 0.15f, 1.00f, 0.00f, 0.25f}, 2, NOISE_BROWN, 0.30f},
-    {"Night rain", {0.50f, 0.30f, 0.25f, 0.00f, 1.00f, 0.00f}, 1, NOISE_PINK, 0.25f},
-};
-#define N_SCENES ((int)(sizeof SCENES / sizeof SCENES[0]))
-
-static const struct {
-    char key;
-    const char *name;
-} LAYERS[L_COUNT] = {
-    {'p', "harmonic pad"}, {'b', "binaural"}, {'n', "noise"},
-    {'o', "ocean"},        {'r', "rain"},     {'c', "chimes"},
-};
-
-/* ------------------------------------------------------------------ app state */
-
-static SynthParams params;
-static Variation variation;
-static float remembered[L_COUNT];
-static int band;
-static int scene;
-static uint32_t rng;
 static volatile sig_atomic_t quit_requested;
-
-static void apply_scene(int i)
-{
-    const Scene *s = &SCENES[i];
-    scene = i;
-    for (int l = 0; l < L_COUNT; l++) {
-        params.level[l] = s->level[l];
-        remembered[l] = s->level[l] > 0.01f ? s->level[l] : 0.5f;
-    }
-    band = s->band;
-    params.beat_hz = BANDS[band].hz;
-    params.noise_color = s->noise;
-    params.brightness = s->brightness;
-}
-
-static void toggle_layer(int l)
-{
-    if (params.level[l] > 0.01f) {
-        remembered[l] = params.level[l];
-        params.level[l] = 0.0f;
-    } else {
-        params.level[l] = remembered[l];
-    }
-}
-
-/* off -> delta -> theta -> alpha -> off */
-static void cycle_binaural(void)
-{
-    if (params.level[L_BINAURAL] <= 0.01f) {
-        band = 0;
-        params.level[L_BINAURAL] = remembered[L_BINAURAL];
-    } else if (band < N_BANDS - 1) {
-        band++;
-    } else {
-        toggle_layer(L_BINAURAL);
-    }
-    params.beat_hz = BANDS[band].hz;
-}
-
-/* off -> pink -> brown -> white -> off */
-static void cycle_noise(void)
-{
-    if (params.level[L_NOISE] <= 0.01f) {
-        params.noise_color = NOISE_PINK;
-        params.level[L_NOISE] = remembered[L_NOISE];
-    } else if (params.noise_color != NOISE_WHITE) {
-        params.noise_color++;
-    } else {
-        toggle_layer(L_NOISE);
-    }
-}
-
-static float clampf(float x, float lo, float hi) { return x < lo ? lo : x > hi ? hi : x; }
-
-static void new_variation(void)
-{
-    variation = synth_random_variation(&rng);
-    synth_set_variation(&variation);
-}
 
 /* ------------------------------------------------------------------ terminal */
 
@@ -163,7 +58,7 @@ static void on_signal(int sig)
 
 static void bar(char *dst, size_t n, float v, int width)
 {
-    int full = (int)lroundf(clampf(v, 0.0f, 1.0f) * (float)width);
+    int full = (int)lroundf(fminf(fmaxf(v, 0.0f), 1.0f) * (float)width);
     size_t o = 0;
     for (int i = 0; i < width && o + 4 < n; i++) {
         const char *g = i < full ? "█" : "░";
@@ -176,46 +71,32 @@ static void bar(char *dst, size_t n, float v, int width)
 
 static void draw(const char *farewell)
 {
-    SynthStatus st;
-    synth_get_status(&st);
+    app_poll();
 
-    char out[8192], b[256], key[64];
+    char out[8192], b[256];
     size_t o = 0;
 #define P(...) (o += (size_t)snprintf(out + o, sizeof out - o, __VA_ARGS__))
-
-    synth_variation_name(&variation, key, sizeof key);
 
     P("\033[H\n");
     P("   " C_TITLE "~  c h i l l e r  ~" C_RESET "\033[K\n\n");
     P("   scene " C_ACCENT "[%d] %-18s" C_RESET " key " C_ACCENT "%-16s" C_RESET " chord " C_ACCENT "%s" C_RESET "\033[K\n",
-      scene + 1, SCENES[scene].name, key, st.chord);
+      app_scene() + 1, app_scene_name(app_scene()), app_key_name(), app_chord());
     P("   " C_DIM "────────────────────────────────────────────────────────────────────" C_RESET "\033[K\n");
 
     for (int l = 0; l < L_COUNT; l++) {
-        int on = params.level[l] > 0.01f;
-        bar(b, sizeof b, st.level[l], 20);
-        const char *extra = "";
-        char tmp[64];
-        if (l == L_BINAURAL && on) {
-            snprintf(tmp, sizeof tmp, "%s %.1f Hz", BANDS[band].name, BANDS[band].hz);
-            extra = tmp;
-        } else if (l == L_NOISE && on) {
-            static const char *COLORS[NOISE_COLORS] = {"pink", "brown", "white"};
-            extra = COLORS[params.noise_color];
-        }
-        P("   %s%c" C_RESET "  %s%-14s %s  %s" C_RESET "\033[K\n", C_ACCENT, LAYERS[l].key, on ? C_ON : C_DIM,
-          LAYERS[l].name, b, extra);
+        bar(b, sizeof b, app_level(l), 20);
+        P("   %s%c" C_RESET "  %s%-14s %s  %s" C_RESET "\033[K\n", C_ACCENT, app_layer_key(l),
+          app_layer_on(l) ? C_ON : C_DIM, app_layer_name(l), b, app_layer_detail(l));
     }
 
     P("\033[K\n");
-    bar(b, sizeof b, params.master, 10);
+    bar(b, sizeof b, app_volume(), 10);
     P("   volume      " C_ON "%s" C_RESET, b);
-    bar(b, sizeof b, params.brightness, 10);
+    bar(b, sizeof b, app_brightness(), 10);
     P("     brightness  " C_ON "%s" C_RESET "\033[K\n\n", b);
 
     /* Breathing guide: 5 s inhale, 5 s exhale, in phase with the waves */
-    double cycle = synth_breath_seconds();
-    double ph = fmod(st.seconds, cycle) / cycle;
+    double ph = app_breath_phase();
     float env = 0.5f - 0.5f * cosf(6.2831853f * (float)ph);
     int half = 16, fill = (int)lroundf(env * (float)half);
     P("   " C_DIM "breath 6/min " C_RESET "    " C_BREATH);
@@ -245,32 +126,27 @@ static void handle_keys(const char *buf, ssize_t n)
         if (c == '\033' && i + 2 < n && buf[i + 1] == '[') { /* arrow keys */
             char a = buf[i + 2];
             i += 2;
-            if (a == 'A') params.master = clampf(params.master + 0.05f, 0, 1);
-            if (a == 'B') params.master = clampf(params.master - 0.05f, 0, 1);
-            if (a == 'C') params.brightness = clampf(params.brightness + 0.1f, 0, 1);
-            if (a == 'D') params.brightness = clampf(params.brightness - 0.1f, 0, 1);
+            if (a == 'A') app_change_volume(0.05f);
+            if (a == 'B') app_change_volume(-0.05f);
+            if (a == 'C') app_change_brightness(0.1f);
+            if (a == 'D') app_change_brightness(-0.1f);
             continue;
         }
-        if (c >= '1' && c < '1' + N_SCENES) {
-            apply_scene(c - '1');
+        if (c >= '1' && c < '1' + APP_SCENES) {
+            app_apply_scene(c - '1');
             continue;
         }
+        for (int l = 0; l < L_COUNT; l++)
+            if (c == app_layer_key(l)) app_press(l);
         switch (c) {
         case 'q': case 'Q': quit_requested = 1; break;
-        case ' ': new_variation(); break;
-        case 'p': toggle_layer(L_PAD); break;
-        case 'b': cycle_binaural(); break;
-        case 'n': cycle_noise(); break;
-        case 'o': toggle_layer(L_OCEAN); break;
-        case 'r': toggle_layer(L_RAIN); break;
-        case 'c': toggle_layer(L_CHIMES); break;
-        case '+': case '=': params.master = clampf(params.master + 0.05f, 0, 1); break;
-        case '-': case '_': params.master = clampf(params.master - 0.05f, 0, 1); break;
-        case ']': params.brightness = clampf(params.brightness + 0.1f, 0, 1); break;
-        case '[': params.brightness = clampf(params.brightness - 0.1f, 0, 1); break;
+        case ' ': app_new_variation(); break;
+        case '+': case '=': app_change_volume(0.05f); break;
+        case '-': case '_': app_change_volume(-0.05f); break;
+        case ']': app_change_brightness(0.1f); break;
+        case '[': app_change_brightness(-0.1f); break;
         }
     }
-    synth_set_params(&params);
 }
 
 /* ------------------------------------------------------------------ render to WAV */
@@ -328,13 +204,12 @@ static void usage(const char *argv0)
     fprintf(stderr,
             "usage: %s [scene 1-%d]\n"
             "       %s --render file.wav seconds [scene 1-%d]\n",
-            argv0, N_SCENES, argv0, N_SCENES);
+            argv0, APP_SCENES, argv0, APP_SCENES);
 }
 
 int main(int argc, char **argv)
 {
-    rng = (uint32_t)time(NULL) ^ ((uint32_t)getpid() << 16);
-    if (!rng) rng = 1;
+    uint32_t seed = (uint32_t)time(NULL) ^ ((uint32_t)getpid() << 16);
 
     int start_scene = 1, render = 0;
     const char *wav = NULL;
@@ -350,13 +225,9 @@ int main(int argc, char **argv)
         if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) return usage(argv[0]), 0;
         start_scene = atoi(argv[1]) - 1;
     }
-    if (start_scene < 0 || start_scene >= N_SCENES) return usage(argv[0]), 2;
+    if (start_scene < 0 || start_scene >= APP_SCENES) return usage(argv[0]), 2;
 
-    synth_init(rng);
-    new_variation();
-    params.master = 0.7f;
-    apply_scene(start_scene);
-    synth_set_params(&params);
+    app_init(seed, start_scene);
 
     if (render) return render_wav(wav, seconds);
 
@@ -384,8 +255,7 @@ int main(int argc, char **argv)
     }
 
     /* fade out on exit */
-    params.master = 0.0f;
-    synth_set_params(&params);
+    app_set_muted(1);
     for (int i = 0; i < 30; i++) {
         draw("see you soon…");
         usleep(50000);

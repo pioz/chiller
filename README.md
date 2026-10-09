@@ -3,7 +3,8 @@
 A relaxing sound generator for the terminal, written in C.
 
 chiller synthesizes everything in real time. It uses no audio files, so the sound never loops
-and never repeats exactly. It runs on macOS and Linux.
+and never repeats exactly. It runs in the terminal on macOS and Linux, and as a
+[web page](#web-version) that also works on phones.
 
 ```
    ~  c h i l l e r  ~
@@ -243,10 +244,77 @@ RMS levels, which is useful to check the mix.
   AudioQueue calls it from its own thread. On Linux a dedicated thread renders and writes
   blocks to ALSA, recovering automatically from underruns. To support another system, only a
   new file of this kind is needed.
-- `src/main.c`: the terminal UI (raw mode, ANSI colors), scenes, key handling and the
-  `--render` mode.
+- `src/app.c`: the app logic shared by the terminal and the web version: scenes, layer toggles,
+  the binaural and noise cycles, volume, brightness and variations. Both front ends call the
+  same functions, so they always behave the same way.
+- `src/main.c`: the terminal UI (raw mode, ANSI colors), key handling and the `--render` mode.
+- `www/`: the web version, see below.
 
 The program uses about 7% of one CPU core.
+
+## Web version
+
+The `www/` folder contains the same program as a web page. The C engine in `src/`
+(`synth.c` and `app.c`) is compiled to WebAssembly (`www/chiller.wasm`, 18 KB), so the page
+sounds and behaves exactly like the terminal version: on the same seed the two produce the same
+samples, up to rounding errors around -70 dB. Every keyboard shortcut becomes a button, and on
+a computer the terminal's shortcuts work too. The page fits a phone screen without scrolling, down to an
+iPhone SE in Safari: sizes and spacing follow the visible height of the screen.
+
+| terminal                | web page                                                     |
+|-------------------------|--------------------------------------------------------------|
+| `1`–`5`                 | the scene buttons                                            |
+| `p` `b` `n` `o` `r` `c` | tap a layer row (binaural and noise cycle as in the terminal) |
+| `space`                 | **new variation** button                                     |
+| `+` `-`, `[` `]`        | − and + buttons next to volume and brightness                |
+| `q`                     | play/pause button: it fades out and suspends the audio       |
+
+### Running it
+
+The page must be served over HTTP: browsers do not load WebAssembly or audio worklets from
+`file://`. Any static server works, for example:
+
+```sh
+python3 -m http.server -d www 8000    # then open http://localhost:8000
+```
+
+To use it on a phone, publish the `www/` folder on any static host with HTTPS (GitHub Pages,
+Netlify, Cloudflare Pages, your own server). Then, on an iPhone, open the page in Safari, tap
+**Share → Add to Home Screen**, and chiller gets its own icon, opens full screen and works
+offline.
+
+On a phone over plain `http` on the local network (e.g. `http://192.168.1.10:8000`) the page
+works too, with two differences: browsers allow audio worklets only on HTTPS, so the audio runs
+on the page's own thread through an older API, and the offline cache is not available.
+
+### Limits on iPhone
+
+iOS stops the audio of web pages when the screen locks or you switch to another app. While
+chiller is playing, the page asks to keep the screen on (Screen Wake Lock), so the phone does
+not lock by itself; you can turn the brightness down. On Safari the page also asks to keep
+playing with the silent switch on.
+
+### How it is built
+
+- `www/wasm/`: what the engine needs to run in the browser without a C library: a few math
+  functions (`sinf`, `expf`, `tanhf`…), `memcpy`, `memset`, a small `snprintf`, and a no-op
+  mutex (in the browser the whole engine runs on the audio thread).
+- `www/engine.js`: loads the WebAssembly module and exposes `render()`, commands and state.
+- `www/worklet.js`: runs the engine on the browser's audio thread (AudioWorklet).
+- `www/main.js`, `www/index.html`, `www/style.css`: the interface, with the terminal's colors
+  and segment bars.
+- `www/manifest.webmanifest`, `www/sw.js` and the icons: installation on the home screen and
+  offline use. After changing a file in `www/`, bump `VERSION` in `sw.js` so installed copies
+  update.
+
+`www/chiller.wasm` is already built. After changing the C code, rebuild it with:
+
+```sh
+make web
+```
+
+This needs a `clang` that can target `wasm32` (Apple's clang can) and `wasm-ld`
+(`brew install lld`, `apt install lld`). No other WebAssembly toolchain is needed.
 
 ## Scientific references
 
