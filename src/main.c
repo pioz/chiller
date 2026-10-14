@@ -1,5 +1,6 @@
 #include "app.h"
 #include "audio.h"
+#include "media.h"
 #include "synth.h"
 
 #include <math.h>
@@ -13,6 +14,7 @@
 #include <unistd.h>
 
 static volatile sig_atomic_t quit_requested;
+static int paused;
 
 /* ------------------------------------------------------------------ terminal */
 
@@ -78,7 +80,7 @@ static void draw(const char *farewell)
 #define P(...) (o += (size_t)snprintf(out + o, sizeof out - o, __VA_ARGS__))
 
     P("\033[H\n");
-    P("   " C_TITLE "~  c h i l l e r  ~" C_RESET "\033[K\n\n");
+    P("   " C_TITLE "~  c h i l l e r  ~" C_RESET "%s\033[K\n\n", paused && !farewell ? "      " C_DIM "❚❚ paused" C_RESET : "");
     P("   scene " C_ACCENT "[%d] %-18s" C_RESET " key " C_ACCENT "%-16s" C_RESET " chord " C_ACCENT "%s" C_RESET "\033[K\n",
       app_scene() + 1, app_scene_name(app_scene()), app_key_name(), app_chord());
     P("   " C_DIM "────────────────────────────────────────────────────────────────────" C_RESET "\033[K\n");
@@ -147,6 +149,19 @@ static void handle_keys(const char *buf, ssize_t n)
         case '[': app_change_brightness(-0.1f); break;
         }
     }
+}
+
+/* Play/pause and next from the media keys, headphones and Now Playing. Pausing fades out like
+ * quitting, but the program keeps running. */
+static void on_media(MediaCommand c)
+{
+    switch (c) {
+    case MEDIA_PLAY: paused = 0; break;
+    case MEDIA_PAUSE: paused = 1; break;
+    case MEDIA_TOGGLE: paused = !paused; break;
+    case MEDIA_NEXT: app_new_variation(); return;
+    }
+    app_set_muted(paused);
 }
 
 /* ------------------------------------------------------------------ render to WAV */
@@ -239,9 +254,12 @@ int main(int argc, char **argv)
     signal(SIGINT, on_signal);
     signal(SIGTERM, on_signal);
     term_raw();
+    media_start(on_media);
 
     int stdin_open = 1;
     while (!quit_requested) {
+        media_poll();
+        media_update(!paused, app_scene_name(app_scene()), app_key_name());
         draw(NULL);
         struct pollfd pfd = {.fd = STDIN_FILENO, .events = POLLIN};
         if (stdin_open && poll(&pfd, 1, 50) > 0 && (pfd.revents & (POLLIN | POLLHUP))) {
@@ -260,6 +278,7 @@ int main(int argc, char **argv)
         draw("see you soon…");
         usleep(50000);
     }
+    media_stop();
     audio_stop();
     term_restore();
     return 0;

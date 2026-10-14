@@ -84,6 +84,14 @@ From top to bottom:
 
 Every change happens gradually, over one to a few seconds, so there are never abrupt jumps.
 
+### Media keys
+
+On macOS chiller also answers to the system media controls: the play/pause and next keys on
+the keyboard, the buttons on headphones, and the Now Playing widget in Control Center, which
+shows the scene and the key. Play/pause fades the sound out and back in without quitting
+(the header shows `❚❚ paused`); next picks a new variation, like `space`. On Linux the media
+keys are not supported yet.
+
 ## Scenes
 
 A scene is a ready-made, balanced mix of layers. Switching scene crossfades smoothly from one
@@ -272,6 +280,11 @@ iPhone SE in Safari: sizes and spacing follow the visible height of the screen.
 | `space`                 | **new variation** button                                     |
 | `+` `-`, `[` `]`        | − and + buttons next to volume and brightness                |
 | `q`                     | play/pause button: it fades out and suspends the audio       |
+
+The media keys work on the web page too: play/pause and next (new variation) from the
+keyboard, headphones, and the lock screen or notification controls on phones. To receive them,
+the page plays a silent audio track alongside the synth, since browsers give media controls
+only to pages that play a media element.
 
 ### Running it
 

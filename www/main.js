@@ -10,6 +10,8 @@ let playing = false;
 let pauseTimer = 0;
 let wakeLock = null;
 let built = false;
+let silence = null;  // <audio> that makes the page a media player for the OS
+let nowPlaying = ""; // scene and key shown in the media controls
 
 // Drawn icons instead of ▶ and ❚❚: font glyphs sit off-center. The triangle's centroid is at the
 // center of the box, which is what makes it look centered.
@@ -57,20 +59,81 @@ async function start() {
   showPlaying();
 }
 
-function togglePlay() {
-  if (!ctx) return;
+function setPlaying(on) {
+  if (!send || on === playing) return;
   clearTimeout(pauseTimer);
-  if (playing) {
+  if (on) {
+    ctx.resume();
+    send({ cmd: "mute", value: 0 });
+  } else {
     // Fade out like `q` in the terminal, then suspend the audio to save battery.
     send({ cmd: "mute", value: 1 });
     pauseTimer = setTimeout(() => ctx.suspend(), 1200);
-  } else {
-    ctx.resume();
-    send({ cmd: "mute", value: 0 });
   }
-  playing = !playing;
+  playing = on;
   keepAwake(playing);
   showPlaying();
+}
+
+const togglePlay = () => setPlaying(!playing);
+
+// ------------------------------------------------------------------ media keys
+
+// Media keys, headphone buttons and the lock screen / Now Playing controls. Browsers hand them
+// only to pages that play a media element, and Web Audio alone does not count: so a silent,
+// looping <audio> plays alongside the synth.
+function setupMediaSession() {
+  if (!("mediaSession" in navigator)) return;
+  silence = new Audio(silentWav(10));
+  silence.loop = true;
+  silence.play().catch(() => {});
+  // The OS can pause the element itself (e.g. headphones unplugged): follow it.
+  silence.addEventListener("pause", () => setPlaying(false));
+  silence.addEventListener("play", () => setPlaying(true));
+
+  const actions = {
+    play: () => setPlaying(true),
+    pause: () => setPlaying(false),
+    stop: () => setPlaying(false),
+    nexttrack: () => command("variation"),
+  };
+  for (const [action, handler] of Object.entries(actions)) {
+    try {
+      navigator.mediaSession.setActionHandler(action, handler);
+    } catch {
+      // action not supported by this browser
+    }
+  }
+}
+
+// A WAV file of silence, 8 kHz 8-bit mono. Chrome shows media controls only for media longer
+// than a few seconds.
+function silentWav(seconds) {
+  const n = 8000 * seconds;
+  const b = new DataView(new ArrayBuffer(44 + n));
+  const text = (o, s) => [...s].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
+  text(0, "RIFF"); b.setUint32(4, 36 + n, true); text(8, "WAVEfmt ");
+  b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, 8000, true); b.setUint32(28, 8000, true); b.setUint16(32, 1, true);
+  b.setUint16(34, 8, true); text(36, "data"); b.setUint32(40, n, true);
+  for (let i = 0; i < n; i++) b.setUint8(44 + i, 128);
+  return URL.createObjectURL(new Blob([b], { type: "audio/wav" }));
+}
+
+function updateMediaSession(state) {
+  if (!silence) return;
+  const title = state.scenes[state.scene];
+  if (title + state.key === nowPlaying) return;
+  nowPlaying = title + state.key;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title,
+    artist: "chiller",
+    album: state.key,
+    artwork: [
+      { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  });
 }
 
 // iOS stops web audio when the screen locks, so keep the screen on while playing.
@@ -159,11 +222,17 @@ function update(state) {
   for (let i = -BREATH_DOTS; i <= BREATH_DOTS; i++) dots += Math.abs(i) <= fill ? "●" : "·";
   $("breath").textContent = dots;
   $("breath-label").textContent = state.breath < 0.5 ? "inhale…" : "exhale…";
+  updateMediaSession(state);
 }
 
 function showPlaying() {
   $("play").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
   $("play").setAttribute("aria-label", playing ? "Pause" : "Play");
+  if (silence) {
+    if (playing && silence.paused) silence.play().catch(() => {});
+    if (!playing && !silence.paused) silence.pause();
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  }
 }
 
 function command(cmd, value) {
@@ -174,8 +243,11 @@ function command(cmd, value) {
 
 $("start").onclick = () => {
   $("start").disabled = true;
+  setupMediaSession(); // here, inside the tap: Safari plays media only from a user gesture
   start().catch((err) => {
     $("start").disabled = false;
+    silence?.pause();
+    silence = null;
     $("intro-note").textContent = `cannot start the audio: ${err.message}`;
   });
 };

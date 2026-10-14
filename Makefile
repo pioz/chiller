@@ -4,14 +4,14 @@ CFLAGS ?= -O2 -Wall -Wextra -std=gnu11
 SRC = src/main.c src/app.c src/synth.c
 
 ifeq ($(shell uname -s),Darwin)
-SRC += src/audio_mac.c
-LDLIBS = -lm -lpthread -framework AudioToolbox -framework CoreFoundation
+SRC += src/audio_mac.c src/media_mac.m
+LDLIBS = -lm -lpthread -framework AudioToolbox -framework CoreFoundation -framework Foundation -framework MediaPlayer
 else
-SRC += src/audio_alsa.c
+SRC += src/audio_alsa.c src/media_none.c
 LDLIBS = -lm -lpthread -lasound
 endif
 
-chiller: $(SRC) src/app.h src/synth.h src/audio.h
+chiller: $(SRC) src/app.h src/synth.h src/audio.h src/media.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDLIBS)
 
 run: chiller
